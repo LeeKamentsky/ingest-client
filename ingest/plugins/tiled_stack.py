@@ -191,27 +191,31 @@ class ZindexTiledStackTileProcessor(TileProcessor):
         if col_range[0] == col_range[1] and row_range[0] == row_range[1]:
             # If the wanted range exists in a single file, open that file and crop the desired range
             fname = self._find_tile(path, row_range[0] + 1, col_range[0] + 1)
-            tile_data = Image.open(fname)
-            upload_img = tile_data.crop((x_range[0] - col_range[0] * self.parameters["tile_shape"][0],
-                                         y_range[0] - row_range[0] * self.parameters["tile_shape"][1],
-                                         x_range[1] - col_range[0] * self.parameters["tile_shape"][0],
-                                         y_range[1] - row_range[0] * self.parameters["tile_shape"][1]))
+            if fname is not None:
+                tile_data = Image.open(fname)
+                upload_img = tile_data.crop((x_range[0] - col_range[0] * self.parameters["tile_shape"][0],
+                                             y_range[0] - row_range[0] * self.parameters["tile_shape"][1],
+                                             x_range[1] - col_range[0] * self.parameters["tile_shape"][0],
+                                             y_range[1] - row_range[0] * self.parameters["tile_shape"][1]))
+            else:
+                upload_img = Image.new("L", (x_range[1] - x_range[0], y_range[1] - y_range[0]), "white")
         else:
             # Create a place holder for the image to upload
-            upload_img = Image.new("L", (x_range[1] - x_range[0], y_range[1] - y_range[0]))
+            upload_img = Image.new("L", (x_range[1] - x_range[0], y_range[1] - y_range[0]), "white")
 
             # Load all the relevant images, and crop them and paste them into the output image
             for r in range(*row_range):
                 for c in range(*col_range):
                     fname = self._find_tile(path, r + 1, c + 1)
-                    tile_data = Image.open(fname)
-                    cropped_img = tile_data.crop((max(x_range[0] - c * self.parameters["tile_shape"][0], 0),
-                                                  max(y_range[0] - r * self.parameters["tile_shape"][1], 0),
-                                                  min(x_range[1] - c * self.parameters["tile_shape"][0], self.parameters["tile_shape"][0]),
-                                                  min(y_range[1] - r * self.parameters["tile_shape"][1], self.parameters["tile_shape"][1])))
-                    # paste the image into the desired location
-                    upload_img.paste(cropped_img, 
-                                     (max(c * self.parameters["tile_shape"][0] - x_range[0], 0), max(r * self.parameters["tile_shape"][1] - y_range[0], 0)))
+                    if fname is not None:
+                        tile_data = Image.open(fname)
+                        cropped_img = tile_data.crop((max(x_range[0] - c * self.parameters["tile_shape"][0], 0),
+                                                      max(y_range[0] - r * self.parameters["tile_shape"][1], 0),
+                                                      min(x_range[1] - c * self.parameters["tile_shape"][0], self.parameters["tile_shape"][0]),
+                                                      min(y_range[1] - r * self.parameters["tile_shape"][1], self.parameters["tile_shape"][1])))
+                        # paste the image into the desired location
+                        upload_img.paste(cropped_img, 
+                                         (max(c * self.parameters["tile_shape"][0] - x_range[0], 0), max(r * self.parameters["tile_shape"][1] - y_range[0], 0)))
 
         
         # Save sub-img to png and return handle
