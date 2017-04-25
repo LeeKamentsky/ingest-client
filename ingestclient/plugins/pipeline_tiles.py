@@ -38,6 +38,7 @@ class PipelineTilePathProcessor(PathProcessor):
                            has the path to the sqlite database.
         '''
         self.database = parameters["database"]
+        print "Accessing database " + self.database
         self.connection = sqlite3.connect(self.database)
         self.cursor = self.connection.cursor()
     
@@ -50,6 +51,7 @@ class PipelineTilePathProcessor(PathProcessor):
         :param ti: ignored
         :returns: A path to the indexed tile
         '''
+        print "Processing tile %d, %d, %d" % (xi, yi, zi)
         path = self.cursor.execute(
             """select location from tiles
                where column=%d
