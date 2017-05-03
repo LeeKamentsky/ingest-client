@@ -14,8 +14,9 @@ The schema of the database is
 
 '''
 
-from PIL import Image
+import six
 import sqlite3
+import tifffile
 
 from .path import PathProcessor
 from .tile import TileProcessor
@@ -69,9 +70,18 @@ class PipelineTileProcessor(TileProcessor):
         '''Set up the processor
         
         :param parameters: The customization parameters for the plugin.
-                           There are no parameters.
+                           The optional parameters are the size of the
+                           volume (height, width, depth) and the size
+                           of a tile (tile_height, tile_width).
         '''
-        pass
+        kwds = ["height", "width", "depth", "tile_height", "tile_width"]
+        
+        if all([kwd in parameters for kwd in kwds]):
+            self.has_parameters = True
+            for kwd in kwds:
+                setattr(self, kwd, parameters[kwd])
+        else:
+            self.has_parameters = False
 
     def process(self, path, xi, yi, zi, ti=0):
         '''Return a file handle for the tile
@@ -82,4 +92,21 @@ class PipelineTileProcessor(TileProcessor):
         :param zi: the z coordinate of the tile. Ignored
         :param ti: the time coordinate of the tile. Ignored.
         '''
+        if self.has_parameters:
+            needs_cropping = False
+            if (xi+1) * self.tile_width > self.width:
+                needs_cropping = True
+                tile_width = self.width - xi * self.tile_width
+            else:
+                tile_width = self.tile_width
+            if (yi+1) * self.tile_height > self.height:
+                needs_cropping = True
+                tile_height = self.height - yi * self.tile_height
+            else:
+                tile_height = self.tile_height
+            if needs_cropping:
+                output = six.BytesIO()
+                img = tifffile.imread(path)
+                tifffile.imsave(output, img[:tile_height, :tile_width])
+                return output
         return open(path, "rb")
