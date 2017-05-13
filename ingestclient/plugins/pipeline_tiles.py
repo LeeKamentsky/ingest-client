@@ -14,6 +14,7 @@ The schema of the database is
 
 '''
 
+import numpy as np
 import six
 import sqlite3
 import tifffile
@@ -93,7 +94,7 @@ class PipelineTileProcessor(TileProcessor):
         :param ti: the time coordinate of the tile. Ignored.
         '''
         if self.has_parameters:
-            needs_cropping = False
+            needs_cropping = True
             if (xi+1) * self.tile_width > self.width:
                 needs_cropping = True
                 tile_width = self.width - xi * self.tile_width
@@ -106,7 +107,7 @@ class PipelineTileProcessor(TileProcessor):
                 tile_height = self.tile_height
             if needs_cropping:
                 output = six.BytesIO()
-                img = tifffile.imread(path)
+                img = tifffile.imread(path).astype(np.uint32)
                 tifffile.imsave(output, img[:tile_height, :tile_width])
                 return output
         return open(path, "rb")
